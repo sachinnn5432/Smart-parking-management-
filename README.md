@@ -252,4 +252,4 @@ See [`report/report.md`](report/report.md) for the complete 15-18 page academic 
 
 ---
 
-*Built with ❤️  — Smart Parking System | Academic Final Year Project*
+*Built by ❤️ Sachin   — Smart Parking System *
