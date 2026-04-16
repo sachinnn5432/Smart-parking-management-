@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Smart Parking Management System</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🅿</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;overflow:hidden;background:#07091a;color:#e8eeff}
+
+/* ── Tokens ── */
+:root{
+  --teal:#00e5cc; --purple:#a855f7; --red:#ef4444;
+  --green:#10b981; --yellow:#f59e0b; --blue:#3b82f6;
+  --card:rgba(11,17,34,0.92); --border:rgba(60,130,255,0.13);
+  --hi:rgba(255,255,255,0.04); --t2:#8899bb; --t3:#394868;
+}
+
+/* ── Layout ── */
+body{display:flex;flex-direction:column}
+
+#hdr{
+  flex-shrink:0;height:56px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;
+  background:rgba(7,9,26,0.97);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);z-index:30;
+}
+.hl{display:flex;align-items:center;gap:10px}
+.hico{
+  width:34px;height:34px;border-radius:9px;font-size:16px;
+  background:linear-gradient(135deg,var(--teal),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px rgba(0,229,204,0.28);
+}
+.htx{
+  font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;
+  background:linear-gradient(135deg,var(--teal),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hsub{font-size:9px;color:var(--t3);margin-top:1px}
+.badges{display:flex;gap:6px}
+.badge{
+  padding:3px 10px;border-radius:20px;font-size:10px;
+  font-weight:700;border:1px solid;white-space:nowrap;
+}
+.bt{background:rgba(0,229,204,0.08);border-color:rgba(0,229,204,0.28);color:var(--teal)}
+.bp{background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.28);color:var(--purple)}
+.bg{background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.28);color:var(--green)}
+
+#main{flex:1;min-height:0;display:flex;overflow:hidden}
+
+/* ── Panels ── */
+#lp,#rp{
+  width:178px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+  padding:10px 8px;display:flex;flex-direction:column;gap:9px;
+  scrollbar-width:thin;scrollbar-color:rgba(0,229,204,0.1) transparent;
+}
+#lp{border-right:1px solid var(--border)}
+#rp{border-left:1px solid var(--border)}
+
+/* ── Cards ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:12px 11px;
+  box-shadow:0 6px 30px rgba(0,0,0,0.5),inset 0 1px 0 var(--hi);
+  backdrop-filter:blur(14px);
+}
+.ctitle{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;
+  color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.ctitle::before{
+  content:'';flex-shrink:0;width:3px;height:11px;
+  background:var(--teal);border-radius:2px;box-shadow:0 0 5px var(--teal);
+}
+
+/* ── Inputs ── */
+.ilabel{display:block;font-size:9px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.pin{
+  width:100%;padding:9px 10px;margin-bottom:8px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;color:#e8eeff;font-family:'Inter',monospace;
+  font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.pin::placeholder{color:var(--t3);font-weight:400;letter-spacing:0;text-transform:none}
+.pin:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,229,204,0.1)}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;padding:9px 10px;border:none;border-radius:8px;
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .22s;overflow:hidden;
+}
+.btn:active:not(:disabled){transform:scale(0.97)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.bpark{background:linear-gradient(135deg,#00c4ae,var(--teal));color:#031a16;
+  box-shadow:0 4px 14px rgba(0,229,204,0.28)}
+.bpark:hover:not(:disabled){box-shadow:0 6px 22px rgba(0,229,204,0.45);transform:translateY(-1px)}
+.brem{background:linear-gradient(135deg,#c0392b,var(--red));color:#fff;
+  box-shadow:0 4px 14px rgba(239,68,68,0.26)}
+.brem:hover:not(:disabled){box-shadow:0 6px 22px rgba(239,68,68,0.42);transform:translateY(-1px)}
+.bdfs{background:linear-gradient(135deg,#7c3aed,var(--purple));color:#fff;
+  box-shadow:0 4px 14px rgba(168,85,247,0.26)}
+.bdfs:hover:not(:disabled){box-shadow:0 6px 22px rgba(168,85,247,0.42);transform:translateY(-1px)}
+
+/* ── Vehicles list ── */
+.vlist{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(239,68,68,0.12) transparent}
+.vitem{
+  display:flex;align-items:center;gap:7px;padding:6px 8px;
+  background:rgba(255,255,255,0.02);border:1px solid var(--border);
+  border-radius:7px;cursor:pointer;transition:.15s;
+}
+.vitem:hover{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.28)}
+.vdot{width:6px;height:6px;border-radius:50%;background:var(--red);
+  box-shadow:0 0 5px var(--red);flex-shrink:0}
+.vpl{font-size:10px;font-weight:700;letter-spacing:.7px;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vsl{font-size:9px;font-weight:600;color:var(--t2);flex-shrink:0}
+.empty{text-align:center;color:var(--t3);font-size:10px;padding:10px}
+
+/* ── DFS ── */
+#dfsp{display:none;margin-top:8px}
+#dfsp.on{display:block}
+.dpath{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.dnode{width:22px;height:22px;border-radius:5px;font-size:9px;font-weight:700;
+  background:rgba(168,85,247,0.14);border:1px solid rgba(168,85,247,0.32);
+  color:var(--purple);display:flex;align-items:center;justify-content:center}
+.darrow{color:var(--t3);font-size:9px;display:flex;align-items:center}
+
+/* ── Canvas area ── */
+#ca{
+  flex:1;min-width:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:10px 6px 8px;gap:7px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(0,229,204,0.025) 0%,transparent 65%);
+}
+.ctopbar{
+  width:100%;max-width:588px;display:flex;
+  align-items:center;justify-content:space-between;padding:0 2px;
+}
+.cttitle{font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;color:var(--t2)}
+.cthint{font-size:9px;color:var(--t3)}
+#cnv{
+  width:100%;max-width:588px;height:auto;display:block;
+  border-radius:16px;border:1px solid rgba(0,229,204,0.15);
+  box-shadow:0 0 40px rgba(0,229,204,0.06),0 8px 36px rgba(0,0,0,0.5);
+  cursor:pointer;
+}
+#leg{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:24px;padding:6px 14px;backdrop-filter:blur(10px);
+}
+.li{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;color:var(--t2)}
+.ld{width:9px;height:9px;border-radius:2px}
+.lsep{width:1px;height:12px;background:var(--border);flex-shrink:0}
+
+/* ── Stats (right panel) ── */
+.stat3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:5px}
+.sitem{
+  background:rgba(255,255,255,0.025);border:1px solid var(--border);
+  border-radius:10px;padding:8px 5px;text-align:center;
+}
+.snum{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;line-height:1;margin-bottom:2px}
+.slbl{font-size:7.5px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc{color:var(--teal)}.sr{color:var(--red)}.sg{color:var(--green)}
+.sp{color:var(--purple)}.sy{color:var(--yellow)}
+
+.obar-w{margin-top:10px}
+.obar-h{display:flex;justify-content:space-between;font-size:9px;color:var(--t2);margin-bottom:5px}
+.obar{width:100%;height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden}
+.ofill{height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  transition:width .7s cubic-bezier(.16,1,.3,1);box-shadow:0 0 8px rgba(0,229,204,0.35)}
+
+/* ── LRU list ── */
+.lsub{font-size:9px;color:var(--t3);margin-bottom:7px;margin-top:-5px}
+.llist{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(0,229,204,0.08) transparent}
+.litem{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;
+  background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:7px;
+}
+.litem:first-child{border-color:rgba(0,229,204,0.2);background:rgba(0,229,204,0.04)}
+.lmru{font-size:7.5px;font-weight:700;color:var(--yellow);text-transform:uppercase;flex-shrink:0}
+.lpl{font-size:10px;font-weight:700;letter-spacing:.5px;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lsl{font-size:9px;font-weight:600;color:var(--teal);flex-shrink:0;
+  background:rgba(0,229,204,0.1);padding:1px 5px;border-radius:8px}
+
+/* ── Slot map ── */
+#smap{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+
+/* ── Revenue card ── */
+.rev-hero{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:9px;
+}
+.rev-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#065f46,#10b981);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:0 0 14px rgba(16,185,129,0.3);
+}
+.rev-amt{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--green);line-height:1}
+.rev-lbl{font-size:8.5px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.rev-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:9px;color:var(--t2);margin-bottom:6px;
+}
+.rev-val{font-weight:700;color:var(--green)}
+.bpdf{
+  background:linear-gradient(135deg,#1e3a8a,var(--blue));color:#fff;
+  box-shadow:0 4px 14px rgba(59,130,246,0.26);margin-top:8px;
+}
+.bpdf:hover:not(:disabled){box-shadow:0 6px 22px rgba(59,130,246,0.42);transform:translateY(-1px)}
+.bclr{
+  background:rgba(239,68,68,0.09);border:1px solid rgba(239,68,68,0.22);
+  color:#fca5a5;font-size:10px;padding:5px;margin-top:4px;border-radius:6px;
+  width:100%;cursor:pointer;font-weight:600;transition:.2s;
+}
+.bclr:hover{background:rgba(239,68,68,0.16)}
+
+/* ── Recent Transactions ── */
+.txlist{display:flex;flex-direction:column;gap:3px;max-height:110px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(16,185,129,0.1) transparent}
+.txitem{
+  display:flex;align-items:center;gap:6px;padding:4px 7px;
+  background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;
+}
+.txbadge{
+  font-size:7px;font-weight:700;padding:1px 5px;border-radius:4px;flex-shrink:0;
+  text-transform:uppercase;letter-spacing:.3px;
+}
+.txin{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.txout{background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.25)}
+.txpl{font-size:9.5px;font-weight:700;letter-spacing:.5px;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txamt{font-size:9px;font-weight:700;color:var(--green);flex-shrink:0}
+.txtime{font-size:8px;color:var(--t3);flex-shrink:0}
+
+/* ── Toasts ── */
+#toasts{
+  position:fixed;top:64px;left:50%;transform:translateX(-50%);
+  z-index:999;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;
+}
+.toast{
+  padding:9px 18px;border-radius:28px;font-size:11px;font-weight:600;
+  backdrop-filter:blur(16px);border:1px solid;white-space:nowrap;max-width:420px;
+  overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transform:translateY(-14px) scale(.95);
+  transition:all .28s cubic-bezier(.16,1,.3,1);
+}
+.toast.show{opacity:1;transform:translateY(0) scale(1)}
+.ts{background:rgba(0,229,204,0.1);border-color:rgba(0,229,204,0.38);color:var(--teal)}
+.te{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.38);color:#fca5a5}
+.ti{background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.38);color:var(--purple)}
+
+/* ── Loading ── */
+#load{
+  position:fixed;inset:0;z-index:600;background:#07091a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.llogo{font-family:'Outfit',sans-serif;font-size:28px;font-weight:800;
+  background:linear-gradient(135deg,var(--teal),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lspin{
+  width:40px;height:40px;border-radius:50%;
+  border:3px solid rgba(255,255,255,0.05);
+  border-top-color:var(--teal);border-right-color:var(--purple);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-size:11px;color:var(--t3);letter-spacing:.8px}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="load">
+  <div class="llogo">🅿 SmartPark</div>
+  <div class="lspin"></div>
+  <div class="ltxt">Loading Parking System…</div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- Header -->
+<div id="hdr">
+  <div class="hl">
+    <div class="hico">🅿</div>
+    <div>
+      <div class="htx">SmartPark</div>
+      <div class="hsub">Smart Parking Management System · C++ DSA Backend</div>
+    </div>
+  </div>
+  <div class="badges">
+    <span class="badge bt" id="mbadge">JS Simulation</span>
+    <span class="badge bp">BFS / DFS Graph</span>
+    <span class="badge bg">LRU Cache</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="lp">
+
+    <div class="card">
+      <div class="ctitle">Park Vehicle</div>
+      <label class="ilabel" for="pi">License Plate</label>
+      <input id="pi" class="pin" type="text" maxlength="15" placeholder="MH12AB1234" autocomplete="off"/>
+      <button id="bpk" class="btn bpark">⬆ Park Vehicle</button>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">Remove Vehicle</div>
+      <label class="ilabel" for="ri">License Plate</label>
+      <input id="ri" class="pin" type="text" maxlength="15" placeholder="MH12AB1234" autocomplete="off"/>
+      <button id="brm" class="btn brem">⬇ Remove Vehicle</button>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">Graph Traversal</div>
+      <button id="bdf" class="btn bdfs">🔍 Run DFS</button>
+      <div id="dfsp">
+        <div style="font-size:9px;color:var(--t3);margin-top:7px;margin-bottom:4px">DFS Order (CO5 – Graph):</div>
+        <div class="dpath" id="dp"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">Parked Vehicles</div>
+      <div class="vlist" id="vlist"><div class="empty">No vehicles parked</div></div>
+    </div>
+
+  </div><!-- /lp -->
+
+  <!-- CENTER CANVAS -->
+  <div id="ca">
+    <div class="ctopbar">
+      <span class="cttitle">🏢 Parking Lot — Live View</span>
+      <span class="cthint">Click slot to inspect · BFS path shown before car moves</span>
+    </div>
+    <canvas id="cnv" width="588" height="428"></canvas>
+    <div id="leg">
+      <div class="li"><div class="ld" style="background:var(--teal);box-shadow:0 0 5px var(--teal)"></div>Available</div>
+      <div class="lsep"></div>
+      <div class="li"><div class="ld" style="background:var(--red);box-shadow:0 0 5px var(--red)"></div>Occupied</div>
+      <div class="lsep"></div>
+      <div class="li"><div class="ld" style="background:var(--yellow);box-shadow:0 0 5px var(--yellow)"></div>BFS Path</div>
+      <div class="lsep"></div>
+      <div class="li"><div class="ld" style="background:var(--purple);box-shadow:0 0 5px var(--purple)"></div>DFS Flash</div>
+      <div class="lsep"></div>
+      <div class="li" style="color:var(--t3)">🚗 Car animates along BFS route</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rp">
+
+    <div class="card">
+      <div class="ctitle">Live Stats</div>
+      <div class="stat3">
+        <div class="sitem"><div class="snum sc" id="stot">20</div><div class="slbl">Total</div></div>
+        <div class="sitem"><div class="snum sr" id="socc">0</div><div class="slbl">Parked</div></div>
+        <div class="sitem"><div class="snum sg" id="sav">20</div><div class="slbl">Free</div></div>
+      </div>
+      <div class="stat3">
+        <div class="sitem"><div class="snum sy" id="shit">0</div><div class="slbl">Hits</div></div>
+        <div class="sitem"><div class="snum sc" id="smis">0</div><div class="slbl">Miss</div></div>
+        <div class="sitem"><div class="snum sp" id="scac">0</div><div class="slbl">Cache</div></div>
+      </div>
+      <div class="obar-w">
+        <div class="obar-h"><span>Occupancy</span><span id="spct">0%</span></div>
+        <div class="obar"><div class="ofill" id="ofill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- REVENUE CARD -->
+    <div class="card">
+      <div class="ctitle">Revenue</div>
+      <div class="rev-hero">
+        <div class="rev-icon">₹</div>
+        <div>
+          <div class="rev-amt" id="rev-amt">0</div>
+          <div class="rev-lbl">Total Earned</div>
+        </div>
+      </div>
+      <div class="rev-row"><span>Rate per vehicle</span><span class="rev-val">Rs. 50</span></div>
+      <div class="rev-row"><span>Total transactions</span><span class="rev-val" id="rev-tx">0</span></div>
+      <div class="rev-row"><span>Vehicles parked today</span><span class="rev-val" id="rev-today">0</span></div>
+      <button id="bpdf" class="btn bpdf">📄 Download PDF Report</button>
+      <button class="bclr" onclick="clearHistory()">🗑 Clear History</button>
+    </div>
+
+    <!-- RECENT TRANSACTIONS -->
+    <div class="card">
+      <div class="ctitle">Transactions</div>
+      <div class="txlist" id="txlist"><div class="empty">No transactions yet</div></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">LRU Cache</div>
+      <div class="lsub">MRU → LRU (cap: 5)</div>
+      <div class="llist" id="llist"><div class="empty">Cache empty</div></div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle">Slot Map</div>
+      <div id="smap"></div>
+    </div>
+
+  </div><!-- /rp -->
+
+</div><!-- /main -->
+
+<script>
+'use strict';
+const API='http://localhost:3001';
+const RATE=50; // Rs. per vehicle
+
+/* ─── Transaction Log (persisted in localStorage) ─── */
+let transactions=JSON.parse(localStorage.getItem('sps_tx')||'[]');
+function saveTx(){localStorage.setItem('sps_tx',JSON.stringify(transactions));}
+function logTx(plate,slot,action,amount=0){
+  const now=new Date();
+  transactions.unshift({
+    id:Date.now(),plate,slot,action,amount,
+    time:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    date:now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+    ts:now.toISOString()
+  });
+  if(transactions.length>200)transactions=transactions.slice(0,200);
+  saveTx();
+  updateRevenue();
+  renderTx();
+}
+function totalEarned(){
+  return transactions.filter(t=>t.action==='PARKED').length*RATE;
+}
+function todayCount(){
+  const today=new Date().toDateString();
+  return transactions.filter(t=>t.action==='PARKED'&&new Date(t.ts).toDateString()===today).length;
+}
+function updateRevenue(){
+  const earned=totalEarned();
+  document.getElementById('rev-amt').textContent='Rs.'+earned.toLocaleString('en-IN');
+  document.getElementById('rev-tx').textContent=transactions.length;
+  document.getElementById('rev-today').textContent=todayCount();
+}
+function renderTx(){
+  const el=document.getElementById('txlist');
+  if(!transactions.length){el.innerHTML='<div class="empty">No transactions yet</div>';return;}
+  el.innerHTML=transactions.slice(0,20).map(t=>{
+    const isIn=t.action==='PARKED';
+    return`<div class="txitem">
+      <span class="txbadge ${isIn?'txin':'txout'}">${isIn?'IN':'OUT'}</span>
+      <span class="txpl">${t.plate}</span>
+      <span class="txtime">S${t.slot+1}</span>
+      ${isIn?`<span class="txamt">+Rs.${t.amount}</span>`:''}
+    </div>`;
+  }).join('');
+}
+function clearHistory(){
+  if(!confirm('Clear all transaction history?'))return;
+  transactions=[];saveTx();updateRevenue();renderTx();
+  toast('Transaction history cleared','i');
+}
+
+/* ─── PDF REPORT GENERATOR ─── */
+async function generatePDF(){
+  const {jsPDF}=window.jspdf;
+  if(!jsPDF){toast('PDF library not loaded','e');return;}
+  const doc=new jsPDF('p','mm','a4');
+  const W=doc.internal.pageSize.getWidth();
+  const now=new Date();
+  const rDate=now.toLocaleString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  /* ── Header banner ── */
+  doc.setFillColor(7,9,26);
+  doc.rect(0,0,W,38,'F');
+  doc.setFillColor(0,229,204);
+  doc.rect(0,38,W,1.5,'F');
+
+  doc.setFontSize(20);doc.setFont('helvetica','bold');
+  doc.setTextColor(0,229,204);
+  doc.text('SmartPark',15,18);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.setTextColor(136,153,187);
+  doc.text('Smart Parking Management System  |  C++ DSA Backend',15,26);
+  doc.text('LRU Cache (DLL+HashMap)  |  BFS/DFS Graph  |  CO1-CO5',15,32);
+  doc.setTextColor(100,180,255);
+  doc.text('Report: '+rDate,W-15,22,{align:'right'});
+  doc.setTextColor(168,85,247);
+  doc.setFont('helvetica','bold');
+  doc.text('Rate: Rs.50 per vehicle',W-15,30,{align:'right'});
+
+  let y=48;
+
+  /* ── Summary boxes ── */
+  doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(30,30,50);
+  doc.text('Executive Summary',15,y);y+=5;
+
+  const summaryData=[
+    {label:'Total Slots',value:'20',color:[0,100,80]},
+    {label:'Currently Parked',value:String(S.occ),color:[180,40,40]},
+    {label:'Available Slots',value:String(20-S.occ),color:[20,120,80]},
+    {label:'Total Transactions',value:String(transactions.length),color:[60,60,140]},
+    {label:'Vehicles Parked Today',value:String(todayCount()),color:[100,60,0]},
+    {label:'Total Revenue Earned',value:'Rs.'+totalEarned().toLocaleString('en-IN'),color:[10,100,50]}
+  ];
+
+  const bw=(W-30)/3;
+  summaryData.forEach((s,i)=>{
+    const col=i%3,row=Math.floor(i/3);
+    const bx=15+col*bw,by=y+row*22;
+    doc.setFillColor(245,248,255);
+    doc.roundedRect(bx,by,bw-3,18,2,2,'F');
+    doc.setFillColor(...s.color);
+    doc.rect(bx,by,3,18,'F');
+    doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...s.color);
+    doc.text(s.value,bx+6,by+8);
+    doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(100,100,130);
+    doc.text(s.label,bx+6,by+14);
+  });
+  y+=48;
+
+  /* ── Hourly revenue bar (text-based) ── */
+  doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(30,30,50);
+  doc.text('Revenue Summary',15,y);y+=5;
+  doc.setFillColor(235,245,235);
+  doc.roundedRect(15,y,W-30,24,2,2,'F');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(10,100,50);
+  doc.text('Rs.'+totalEarned().toLocaleString('en-IN'),20,y+10);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,120,80);
+  doc.text('Total Earned (All Time)',20,y+17);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(30,30,130);
+  doc.text('Rs.'+(todayCount()*RATE).toLocaleString('en-IN'),W/2,y+10);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(80,80,130);
+  doc.text("Today's Revenue",W/2,y+17);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(100,40,10);
+  doc.text('Rs.50 / vehicle',W-15,y+10,{align:'right'});
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(120,80,50);
+  doc.text('Rate Charged',W-15,y+17,{align:'right'});
+  y+=30;
+
+  /* ── Currently parked ── */
+  const parkedNow=S.plates.map((p,i)=>p?{p,i}:null).filter(Boolean);
+  if(parkedNow.length){
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(30,30,50);
+    doc.text('Currently Parked Vehicles',15,y);y+=5;
+    doc.setFillColor(7,9,26);doc.rect(15,y,W-30,7,'F');
+    doc.setTextColor(0,229,204);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    [15,50,100,140,165].forEach((x,j)=>{
+      doc.text(['#','License Plate','Slot','Status','Fee Paid'][j],x,y+4.5);
+    });
+    y+=7;
+    parkedNow.forEach((v,i)=>{
+      if(y>265){doc.addPage();y=20;}
+      doc.setFillColor(i%2===0?248:255,i%2===0?252:255,i%2===0?248:255);
+      doc.rect(15,y,W-30,6.5,'F');
+      doc.setTextColor(50,50,80);doc.setFont('helvetica','normal');doc.setFontSize(8);
+      doc.text(String(i+1),15,y+4.5);
+      doc.text(v.p,50,y+4.5);
+      doc.text('Slot '+String(v.i+1),100,y+4.5);
+      doc.setTextColor(10,100,50);doc.setFont('helvetica','bold');
+      doc.text('PARKED',140,y+4.5);
+      doc.setTextColor(10,100,50);
+      doc.text('Rs.50',165,y+4.5);
+      y+=6.5;
+    });
+    y+=5;
+  }
+
+  /* ── Transaction log ── */
+  doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(30,30,50);
+  doc.text('Transaction Log',15,y);y+=5;
+
+  if(!transactions.length){
+    doc.setFontSize(9);doc.setFont('helvetica','italic');doc.setTextColor(150,150,180);
+    doc.text('No transactions recorded yet.',15,y+6);
+    y+=12;
+  }else{
+    /* header row */
+    doc.setFillColor(7,9,26);doc.rect(15,y,W-30,7,'F');
+    doc.setTextColor(0,229,204);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    [[15,'#'],[28,'Plate No.'],[68,'Slot'],[88,'Action'],[118,'Date'],[155,'Time'],[172,'Amount']].forEach(([x,h])=>doc.text(h,x,y+4.8));
+    y+=7;
+
+    transactions.forEach((tx,i)=>{
+      if(y>275){doc.addPage();y=20;}
+      doc.setFillColor(i%2===0?248:255,i%2===0?250:255,i%2===0?255:255);
+      doc.rect(15,y,W-30,6.5,'F');
+      const isIn=tx.action==='PARKED';
+      doc.setTextColor(50,50,80);doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+      doc.text(String(i+1),15,y+4.5);
+      doc.text(tx.plate,28,y+4.5);
+      doc.text('S'+(tx.slot+1),68,y+4.5);
+      if(isIn){doc.setTextColor(10,120,60);doc.setFont('helvetica','bold');}
+      else{doc.setTextColor(180,40,40);doc.setFont('helvetica','bold');}
+      doc.text(tx.action,88,y+4.5);
+      doc.setTextColor(80,80,100);doc.setFont('helvetica','normal');
+      doc.text(tx.date||'',118,y+4.5);
+      doc.text(tx.time||'',155,y+4.5);
+      if(isIn){
+        doc.setTextColor(10,120,60);doc.setFont('helvetica','bold');
+        doc.text('+Rs.'+tx.amount,172,y+4.5);
+      }else{
+        doc.setTextColor(160,160,180);
+        doc.text('—',172,y+4.5);
+      }
+      y+=6.5;
+    });
+  }
+
+  /* ── Footer on every page ── */
+  const pages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFillColor(7,9,26);doc.rect(0,286,W,12,'F');
+    doc.setFillColor(0,229,204);doc.rect(0,286,W,0.8,'F');
+    doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+    doc.setTextColor(90,100,130);
+    doc.text('SmartPark — Smart Parking Management System',15,292);
+    doc.setTextColor(0,180,150);
+    doc.text('DSA: LRU Cache + BFS/DFS Graph | CO1–CO5 | Rate: Rs.50/vehicle',W/2,292,{align:'center'});
+    doc.setTextColor(90,100,130);
+    doc.text('Page '+p+' of '+pages,W-15,292,{align:'right'});
+  }
+
+  const fname='SmartPark-Report-'+now.toISOString().slice(0,10)+'.pdf';
+  doc.save(fname);
+  toast('PDF Report saved: '+fname,'s');
+}
+
+
+/* ─── Canvas geometry (for logical 588×428 canvas) ─── */
+const CW=588,CH=428,ROWS=4,COLS=5,TOT=20;
+const SW=85,  // slot width
+      SH=50,  // slot height
+      SG=6,   // slot gap
+      AH=28;  // aisle height
+const LX=50;  // lot x-start (left edge of col-0)
+const TO=78;  // top offset (y where grid begins)
+const LNE=22; // left-lane centre X
+const EY=14;  // entry Y (where car appears)
+
+function srect(id){
+  const c=id%COLS,r=Math.floor(id/COLS);
+  return{x:LX+c*(SW+SG),y:TO+r*(AH+SH)+AH,w:SW,h:SH};
+}
+function sctr(id){const r=srect(id);return{x:r.x+r.w/2,y:r.y+r.h/2};}
+function acy(row){return TO+row*(AH+SH)+AH/2;}
+
+/* ─── App State ─── */
+const S={slots:Array(TOT).fill(false),plates:Array(TOT).fill(''),occ:0,hits:0,miss:0,lru:[]};
+const parked={};
+const bfsH=new Set(), dfsH=new Set();
+let acar=null;
+
+const cv=document.getElementById('cnv');
+const cx=cv.getContext('2d');
+const CPAL=['#3b82f6','#a855f7','#ec4899','#f97316','#10b981','#f59e0b','#06b6d4','#84cc16'];
+let ci=0;
+
+/* ─── Rounded rect ─── */
+function rr(x,y,w,h,r){
+  cx.beginPath();
+  cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.arcTo(x+w,y,x+w,y+r,r);
+  cx.lineTo(x+w,y+h-r);cx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  cx.lineTo(x+r,y+h);cx.arcTo(x,y+h,x,y+h-r,r);
+  cx.lineTo(x,y+r);cx.arcTo(x,y,x+r,y,r);
+  cx.closePath();
+}
+
+/* ─── DRAW BACKGROUND ─── */
+function drawBG(){
+  cx.fillStyle='#070c18';cx.fillRect(0,0,CW,CH);
+  // dot grid
+  cx.fillStyle='rgba(255,255,255,0.02)';
+  for(let x=0;x<CW;x+=32)for(let y=0;y<CH;y+=32){cx.beginPath();cx.arc(x,y,.9,0,Math.PI*2);cx.fill();}
+  // lot floor
+  const lw=COLS*(SW+SG)-SG,lh=ROWS*(AH+SH);
+  rr(LX-7,TO-2,lw+14,lh+5,10);cx.fillStyle='#0b1222';cx.fill();
+  // aisles
+  for(let r=0;r<ROWS;r++){
+    const ay=TO+r*(AH+SH);
+    cx.fillStyle='#0f1929';cx.fillRect(LX-5,ay,lw+10,AH);
+    cx.save();cx.setLineDash([8,10]);cx.strokeStyle='rgba(255,255,255,0.09)';cx.lineWidth=1.4;
+    cx.beginPath();cx.moveTo(LX-4,ay+AH/2);cx.lineTo(LX+lw+4,ay+AH/2);cx.stroke();cx.restore();
+  }
+  // Left entrance lane
+  rr(LNE-9,EY-4,18,TO+ROWS*(AH+SH)-EY+6,6);cx.fillStyle='#101b2e';cx.fill();
+  cx.save();cx.setLineDash([6,8]);cx.strokeStyle='rgba(245,158,11,0.28)';cx.lineWidth=1.3;
+  cx.beginPath();cx.moveTo(LNE,EY+2);cx.lineTo(LNE,TO+ROWS*(AH+SH));cx.stroke();cx.restore();
+  // Entrance arrow
+  cx.save();cx.fillStyle='#f59e0b';cx.shadowColor='#f59e0b';cx.shadowBlur=12;
+  cx.beginPath();cx.moveTo(LNE,EY+2);cx.lineTo(LNE-6,EY-10);cx.lineTo(LNE+6,EY-10);cx.closePath();cx.fill();
+  cx.shadowBlur=0;cx.font='bold 7px Inter,sans-serif';cx.textAlign='center';
+  cx.textBaseline='alphabetic';cx.fillText('ENTER',LNE,EY-14);cx.restore();
+}
+
+/* ─── DRAW SLOTS ─── */
+function drawSlots(){
+  for(let id=0;id<TOT;id++){
+    const r=srect(id),occ=S.slots[id],bf=bfsH.has(id),df=dfsH.has(id);
+    let fill,stroke,gl;
+    if(df)     {fill='rgba(168,85,247,0.2)'; stroke='#a855f7';gl=13;}
+    else if(bf){fill='rgba(245,158,11,0.17)';stroke='#f59e0b';gl=13;}
+    else if(occ){fill='rgba(239,68,68,0.13)'; stroke='#ef4444';gl=8;}
+    else        {fill='rgba(0,229,204,0.06)'; stroke='#00e5cc';gl=5;}
+    cx.save();cx.shadowColor=stroke;cx.shadowBlur=gl;
+    rr(r.x,r.y,r.w,r.h,5);cx.fillStyle=fill;cx.fill();
+    cx.strokeStyle=stroke;cx.lineWidth=bf||df?1.8:1.1;cx.stroke();
+    cx.shadowBlur=0;cx.restore();
+    // number
+    cx.font='bold 11px Inter,sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillStyle=occ?'rgba(239,68,68,0.72)':'rgba(0,229,204,0.58)';
+    cx.fillText(id+1,r.x+r.w/2,r.y+r.h/2-(occ&&S.plates[id]&&!parked[id]?6:0));
+    if(occ&&S.plates[id]&&!parked[id]){
+      cx.font='6.5px Inter,sans-serif';cx.fillStyle='rgba(255,255,255,0.38)';
+      cx.fillText(S.plates[id].slice(0,9),r.x+r.w/2,r.y+r.h/2+7);
+    }
+    // dividers
+    if(id%COLS<COLS-1){
+      cx.strokeStyle='rgba(255,255,255,0.05)';cx.lineWidth=1;
+      const sx=r.x+r.w+SG/2;
+      cx.beginPath();cx.moveTo(sx,r.y+5);cx.lineTo(sx,r.y+r.h-5);cx.stroke();
+    }
+  }
+}
+
+/* ─── DRAW CAR (top-down, angle 0 = facing RIGHT) ─── */
+const CL=44,CW2=22;
+function drawCar(x,y,angle,color){
+  cx.save();cx.translate(x,y);cx.rotate(angle);
+  cx.shadowColor=color;cx.shadowBlur=16;
+  cx.fillStyle=color;rr(-CL/2,-CW2/2,CL,CW2,5);cx.fill();cx.shadowBlur=0;
+  // shine
+  const sh=cx.createLinearGradient(-CL/2,-CW2/2,CL/2,CW2/2);
+  sh.addColorStop(0,'rgba(255,255,255,0.15)');sh.addColorStop(1,'rgba(255,255,255,0.02)');
+  cx.fillStyle=sh;rr(-CL/2,-CW2/2,CL,CW2,5);cx.fill();
+  // windshield (front=right: +x)
+  cx.fillStyle='rgba(150,210,255,0.52)';rr(CL/2-15,-CW2/2+4,13,CW2-8,3);cx.fill();
+  // rear window
+  cx.fillStyle='rgba(100,155,200,0.26)';rr(-CL/2+2,-CW2/2+4,11,CW2-8,3);cx.fill();
+  // cabin highlight
+  cx.fillStyle='rgba(255,255,255,0.07)';rr(-CL/2+14,-CW2/2+4,CL-30,CW2-8,3);cx.fill();
+  // wheels
+  cx.fillStyle='#090c17';
+  [[CL/2-12,-CW2/2-1,10,6],[CL/2-12,CW2/2-5,10,6],
+   [-CL/2+2,-CW2/2-1,10,6],[-CL/2+2,CW2/2-5,10,6]].forEach(([a,b,c,d])=>{rr(a,b,c,d,2);cx.fill();});
+  // headlights
+  cx.shadowColor='#fffaaa';cx.shadowBlur=9;cx.fillStyle='#fffaaa';
+  cx.beginPath();cx.arc(CL/2-1,-CW2/2+5,2.8,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(CL/2-1, CW2/2-5,2.8,0,Math.PI*2);cx.fill();cx.shadowBlur=0;
+  // tail lights
+  cx.shadowColor='#ff2020';cx.shadowBlur=7;cx.fillStyle='#ff3030';
+  cx.beginPath();cx.arc(-CL/2+2,-CW2/2+5,2.3,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.arc(-CL/2+2, CW2/2-5,2.3,0,Math.PI*2);cx.fill();cx.shadowBlur=0;
+  cx.restore();
+}
+function drawParked(){
+  Object.entries(parked).forEach(([id,c])=>{
+    if(!c)return;const{x,y}=sctr(+id);drawCar(x,y,Math.PI/2,c.color);
+  });
+}
+function drawAnim(){if(!acar||!acar.on)return;drawCar(acar.x,acar.y,acar.a,acar.color);}
+
+/* ─── ANIMATION ─── */
+function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+function lerp(a,b,t){return a+(b-a)*t;}
+function wpPark(id){
+  const row=Math.floor(id/COLS),{x,y}=sctr(id),ay=acy(row);
+  return[{x:LNE,y:EY},{x:LNE,y:ay},{x,y:ay},{x,y}];
+}
+function wpRemove(id){
+  const row=Math.floor(id/COLS),{x,y}=sctr(id),ay=acy(row);
+  return[{x,y},{x,y:ay},{x:LNE,y:ay},{x:LNE,y:EY-8}];
+}
+function startAnim(wps,color,spd,cb){
+  acar={on:true,wps,wi:0,t:0,spd:spd||0.022,color,x:wps[0].x,y:wps[0].y,a:Math.PI/2,cb};
+}
+function stepAnim(){
+  if(!acar||!acar.on)return;
+  const{wps,wi}=acar;
+  if(wi>=wps.length-1){acar.on=false;if(acar.cb)acar.cb();return;}
+  const from=wps[wi],to=wps[wi+1];
+  acar.t+=acar.spd;
+  if(acar.t>=1){
+    acar.t=0;acar.x=to.x;acar.y=to.y;acar.wi++;
+    if(acar.wi>=wps.length-1){acar.on=false;if(acar.cb)acar.cb();}
+    return;
+  }
+  const te=ease(acar.t);
+  acar.x=lerp(from.x,to.x,te);acar.y=lerp(from.y,to.y,te);
+  const dx=to.x-from.x,dy=to.y-from.y;
+  if(Math.abs(dx)>.5||Math.abs(dy)>.5)acar.a=Math.atan2(dy,dx);
+}
+
+/* ─── RENDER LOOP ─── */
+function loop(){
+  requestAnimationFrame(loop);
+  stepAnim();drawBG();drawSlots();drawParked();drawAnim();
+}
+
+/* ─── API ─── */
+async function apiPark(p){
+  const r=await fetch(`${API}/parkVehicle`,{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:p})});
+  return r.json();
+}
+async function apiRem(p){
+  const r=await fetch(`${API}/removeVehicle`,{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({plate:p})});
+  return r.json();
+}
+async function apStat(){return(await fetch(`${API}/getStatus`)).json();}
+async function apDFS(){return(await fetch(`${API}/dfsTraversal`)).json();}
+
+/* ─── SYNC ─── */
+async function sync(){
+  try{
+    const d=await apStat();if(!d.success)return;
+    d.slots.forEach(s=>{S.slots[s.id]=s.occupied;S.plates[s.id]=s.plate;});
+    S.occ=d.occupiedCount;S.hits=d.cacheHits;S.miss=d.cacheMisses;S.lru=d.lruCache||[];
+    updateUI();
+  }catch(e){console.warn('sync fail');}
+}
+
+/* ─── UI UPDATES ─── */
+function ac(id,v){
+  const el=document.getElementById(id);if(!el)return;
+  const n=parseFloat(el.textContent)||0;
+  gsap.to({n},{n:v,duration:.55,ease:'power2.out',onUpdate:function(){el.textContent=Math.round(this.targets()[0].n);}});
+}
+function updateUI(){
+  ac('stot',20);ac('socc',S.occ);ac('sav',20-S.occ);
+  ac('shit',S.hits);ac('smis',S.miss);ac('scac',(S.lru||[]).length);
+  const pct=Math.round(S.occ/20*100);
+  document.getElementById('spct').textContent=pct+'%';
+  gsap.to(document.getElementById('ofill'),{width:pct+'%',duration:.7,ease:'power2.out'});
+  renderLRU();renderV();renderMap();
+}
+function renderLRU(){
+  const el=document.getElementById('llist');
+  if(!S.lru||!S.lru.length){el.innerHTML='<div class="empty">Cache empty</div>';return;}
+  el.innerHTML=S.lru.map((v,i)=>`
+    <div class="litem">
+      ${i===0?'<span class="lmru">MRU</span>':''}
+      <span class="lpl">${v.plate}</span>
+      <span class="lsl">S${v.slot+1}</span>
+    </div>`).join('');
+}
+function renderV(){
+  const el=document.getElementById('vlist');
+  const pk=S.plates.map((p,i)=>p?{p,i}:null).filter(Boolean);
+  if(!pk.length){el.innerHTML='<div class="empty">No vehicles</div>';return;}
+  el.innerHTML=pk.map(v=>`
+    <div class="vitem" onclick="_qr('${v.p}')" title="Click to remove">
+      <div class="vdot"></div><span class="vpl">${v.p}</span><span class="vsl">S${v.i+1}</span>
+    </div>`).join('');
+}
+function renderMap(){
+  const el=document.getElementById('smap');
+  el.innerHTML=S.slots.map((o,i)=>`
+    <div style="aspect-ratio:1;border-radius:4px;cursor:pointer;
+      background:${o?'rgba(239,68,68,0.28)':'rgba(0,229,204,0.13)'};
+      border:1px solid ${o?'rgba(239,68,68,0.48)':'rgba(0,229,204,0.32)'};
+      display:flex;align-items:center;justify-content:center;
+      font-size:7px;font-weight:700;color:${o?'#ef4444':'#00e5cc'};
+      transition:transform .14s;"
+      onmouseover="this.style.transform='scale(1.18)'"
+      onmouseout="this.style.transform='scale(1)'">${i+1}</div>`).join('');
+}
+
+/* ─── TOAST ─── */
+function toast(msg,type='s'){
+  const c=document.getElementById('toasts'),t=document.createElement('div');
+  t.className=`toast t${type}`;t.textContent=msg;c.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),380);},3400);
+}
+
+/* ─── LOCK ─── */
+function lock(v){['bpk','brm','bdf'].forEach(id=>document.getElementById(id).disabled=v);}
+
+/* ─── PARK ─── */
+async function doPark(){
+  const inp=document.getElementById('pi');
+  const pl=inp.value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  if(!pl||pl.length<3){toast('Enter a valid license plate','e');return;}
+  lock(true);
+  try{
+    const d=await apiPark(pl);
+    if(d.success){
+      const sid=d.slotId,color=CPAL[ci++%CPAL.length];
+      S.slots[sid]=true;S.plates[sid]=pl;S.occ++;
+      S.hits=d.cacheHits;S.miss=d.cacheMisses;S.lru=d.lruCache||[];
+      inp.value='';
+      logTx(pl,sid,'PARKED',RATE); // record earning
+      const path=d.path||[sid];
+      path.forEach(i=>bfsH.add(i));
+      toast(`🔍 BFS path → [${path.map(p=>p+1).join('→')}] | Rs.${RATE} earned`,'i');
+      renderV();renderMap();
+      setTimeout(()=>{
+        path.forEach(i=>bfsH.delete(i));
+        startAnim(wpPark(sid),color,0.022,()=>{
+          parked[sid]={color,plate:pl};
+          lock(false);updateUI();
+          toast(`✅ ${pl} parked at Slot ${d.slotLabel} · Rs.${RATE} collected`,'s');
+          if(d.cacheHit)toast('⚡ LRU Cache HIT — vehicle recalled!','i');
+        });
+      },850);
+    }else{toast(`❌ ${d.message}`,'e');lock(false);}
+  }catch(e){toast('⚠️ Server not reachable. Run: node server.js','e');lock(false);}
+}
+
+/* ─── REMOVE ─── */
+async function doRem(){
+  const inp=document.getElementById('ri');
+  const pl=inp.value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  if(!pl){toast('Enter a license plate to remove','e');return;}
+  lock(true);
+  try{
+    const d=await apiRem(pl);
+    if(d.success){
+      const sid=d.slotId,c=parked[sid]?.color||CPAL[0];
+      delete parked[sid];
+      S.slots[sid]=false;S.plates[sid]='';S.occ--;
+      S.hits=d.cacheHits;S.miss=d.cacheMisses;S.lru=d.lruCache||[];
+      inp.value='';renderV();renderMap();
+      logTx(pl,sid,'EXITED',0); // log exit
+      startAnim(wpRemove(sid),c,0.026,()=>{lock(false);updateUI();
+        toast(`🚗 ${pl} exited Slot ${d.slotLabel}`,'s');});
+    }else{toast(`❌ ${d.message}`,'e');lock(false);}
+  }catch(e){toast('⚠️ Server not reachable','e');lock(false);}
+}
+
+/* ─── DFS ─── */
+async function doDFS(){
+  lock(true);
+  try{
+    const d=await apDFS();
+    if(d.success){
+      const ord=d.dfsTraversal;
+      ord.forEach((id,i)=>setTimeout(()=>{dfsH.add(id);setTimeout(()=>dfsH.delete(id),400);},i*120));
+      document.getElementById('dfsp').classList.add('on');
+      document.getElementById('dp').innerHTML=ord.map((id,i)=>
+        `<div class="dnode">${id+1}</div>${i<ord.length-1?'<div class="darrow">›</div>':''}`).join('');
+      toast(`🔍 DFS visited ${ord.length} slots in graph order`,'i');
+    }
+  }catch(e){toast('⚠️ DFS failed','e');}
+  lock(false);
+}
+
+/* ─── CANVAS CLICK ─── */
+cv.addEventListener('click',e=>{
+  const rec=cv.getBoundingClientRect();
+  const sx=CW/rec.width,sy=CH/rec.height;
+  const mx=(e.clientX-rec.left)*sx,my=(e.clientY-rec.top)*sy;
+  for(let i=0;i<TOT;i++){
+    const r=srect(i);
+    if(mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h){
+      if(S.plates[i]){
+        document.getElementById('ri').value=S.plates[i];
+        toast(`Slot ${i+1}: ${S.plates[i]} — filled in Remove box`,'i');
+      }else toast(`Slot ${i+1} is available ✓`,'s');
+      break;
+    }
+  }
+});
+
+/* ─── BINDINGS ─── */
+document.getElementById('bpk').addEventListener('click',doPark);
+document.getElementById('brm').addEventListener('click',doRem);
+document.getElementById('bdf').addEventListener('click',doDFS);
+document.getElementById('bpdf').addEventListener('click',generatePDF);
+document.getElementById('pi').addEventListener('keydown',e=>e.key==='Enter'&&doPark());
+document.getElementById('ri').addEventListener('keydown',e=>e.key==='Enter'&&doRem());
+window._qr=pl=>{document.getElementById('ri').value=pl;doRem();};
+
+/* ─── INIT ─── */
+async function init(){
+  await sync();
+  S.plates.forEach((p,id)=>{
+    if(p){parked[id]={color:CPAL[ci++%CPAL.length],plate:p};}
+  });
+  updateRevenue();
+  renderTx();
+  loop();
+  const ls=document.getElementById('load');
+  gsap.to(ls,{opacity:0,duration:.6,delay:.35,onComplete:()=>ls.remove()});
+  gsap.from('#lp .card',{opacity:0,y:10,duration:.5,stagger:.06,ease:'power2.out',delay:.4});
+  gsap.from('#rp .card',{opacity:0,y:10,duration:.5,stagger:.06,ease:'power2.out',delay:.4});
+  gsap.from('#ca',{opacity:0,duration:.6,ease:'power2.out',delay:.35});
+  setInterval(sync,30000);
+}
+init().catch(console.error);
+</script>
+</body>
+</html>
